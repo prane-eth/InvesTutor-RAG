@@ -17,4 +17,4 @@ fastapi
 uvicorn
 pydantic
 pinecone
-faiss-cpu
+newsapi-python

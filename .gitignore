@@ -6,3 +6,4 @@ TODO.md
 response_cache.json
 mlruns.db
 mlruns/
+*.egg-info

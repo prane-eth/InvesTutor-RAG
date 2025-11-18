@@ -1,7 +1,6 @@
 import streamlit as st
-
-from utils.model_utils import rag_chain
 from utils.ingestion import ingest_document
+from utils.model_utils import rag_chain
 from utils.news_integration import (fetch_financial_news, get_market_sentiment,
                                     summarize_news_article)
 

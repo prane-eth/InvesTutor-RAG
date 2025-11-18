@@ -8,9 +8,8 @@ from langchain_pinecone import PineconeVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pinecone import Pinecone as PineconeClient
 from pypdf import PdfReader
-from sentence_transformers import CrossEncoder
 
-from utils.model_utils import embed_model_name, embeddings
+from investutor.utils.retrieval_utils import embed_model_name, embeddings
 
 # Initialize Pinecone
 pc = PineconeClient(api_key=os.getenv("PINECONE_API_KEY"))
@@ -139,7 +138,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(f'Failed: {url} - {e}')
 
-    from utils.retrieval import search_documents
+    from retrieval_utils import search_documents
     results = search_documents('What is investment?')
     print('Results:', len(results))
     print(results[0]['content'][:200] if results else 'No results')

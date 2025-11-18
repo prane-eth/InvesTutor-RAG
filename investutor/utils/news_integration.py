@@ -4,8 +4,9 @@ from typing import Any, Dict, List
 
 import requests
 from bs4 import BeautifulSoup
+from newsapi import NewsApiClient
 
-from utils.model_utils import llm
+from investutor.utils.model_utils import llm
 
 # News API integration for financial news
 NEWS_API_KEY = os.getenv("NEWS_API_KEY", "")
@@ -14,27 +15,23 @@ FINANCIAL_NEWS_SOURCES = [
     "cnbc", "marketwatch", "investopedia", "seeking-alpha"
 ]
 
-def fetch_financial_news(query: str = "investments OR stocks OR bonds OR markets", days_back: int = 1) -> List[Dict[str, Any]]:
+def fetch_financial_news(query: str = "investments OR stocks OR bonds OR markets",
+                         days_back: int = 1) -> List[Dict[str, Any]]:
     """Fetch recent financial news articles."""
     if not NEWS_API_KEY:
         return []
     
     from_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
     
-    url = "https://newsapi.org/v2/everything"
-    params = {
-        "q": query,
-        "from": from_date,
-        "sortBy": "relevancy",
-        "apiKey": NEWS_API_KEY,
-        "language": "en",
-        "pageSize": 10
-    }
-    
     try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
+        newsapi = NewsApiClient(api_key=NEWS_API_KEY)
+        data = newsapi.get_everything(
+            q=query,
+            from_param=from_date,
+            language='en',
+            sort_by='relevancy',
+            page_size=10
+        )
         
         articles = []
         for article in data.get("articles", []):
@@ -141,7 +138,7 @@ def get_market_sentiment() -> Dict[str, Any]:
 
 def ingest_news_to_vectorstore(query: str = "investments OR stocks OR bonds OR markets", days_back: int = 1):
     """Fetch news and ingest summaries into vectorstore."""
-    from utils.ingestion import ingest_document
+    from ingestion import ingest_document
     
     news = fetch_financial_news(query, days_back)
     
