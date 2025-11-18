@@ -1,0 +1,8 @@
+.env
+.deepeval/
+__pycache__/
+unused/
+TODO.md
+response_cache.json
+mlruns.db
+mlruns/
