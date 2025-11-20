@@ -1,3 +1,6 @@
+<img src="./assets/project_logo.jpg" alt="Project logo" width="270px" align="left"/>
+<!-- $ convert logo_large.png -resize 270x270 project_logo.jpg -->
+
 # InvesTutor-RAG - AI Investment Tutor
 
 [![AI](https://img.shields.io/badge/AI-C21B00?style=for-the-badge&logo=openaigym&logoColor=white)]()
