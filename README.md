@@ -1,4 +1,4 @@
-# AI Investment Tutor
+# InvesTutor-RAG - AI Investment Tutor
 
 [![AI](https://img.shields.io/badge/AI-C21B00?style=for-the-badge&logo=openaigym&logoColor=white)]()
 [![LLMs](https://img.shields.io/badge/LLMs-1A535C?style=for-the-badge&logo=openai&logoColor=white)]()
