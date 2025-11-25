@@ -1,4 +1,4 @@
-<img src="./assets/project_logo.jpg" alt="Project logo" width="270px" align="left"/>
+<img src="./assets/project_logo.jpg" alt="Project logo" width="190px" align="left"/>
 <!-- $ convert logo_large.png -resize 270x270 project_logo.jpg -->
 
 # InvesTutor-RAG - AI Investment Tutor
@@ -12,8 +12,7 @@ An AI-powered investment education platform with RAG (Retrieval-Augmented Genera
 
 ## Workflow
 
-<img src="./assets/Workflow.gif" alt="Workflow diagram" height="300px"/>
-
+<img src="./assets/Workflow.gif" alt="Workflow diagram" height="500px"/>
 
 ## Features
 
