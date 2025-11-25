@@ -44,7 +44,8 @@ Instructions:
 Answer:"""
 
 RAG_PROMPT = PromptTemplate(
-    template=rag_prompt_template, input_variables=["context", "question"]
+    template=rag_prompt_template,
+    input_variables=["context", "question"]
 )
 
 

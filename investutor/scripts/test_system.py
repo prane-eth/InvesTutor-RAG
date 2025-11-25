@@ -5,9 +5,9 @@ Test script for the AI Investment Tutor RAG system
 
 import os
 
-from investutor.utils.ingestion import ingest_document
+from investutor.utils.ingestion import ingest_md_document
 from investutor.utils.model_utils import rag_chain
-from investutor.utils.news_integration import fetch_financial_news
+from investutor.utils.news_api_integration import fetch_financial_news
 from investutor.utils.retrieval_utils import rerank_results, search_documents
 
 
@@ -24,7 +24,7 @@ def test_ingestion():
     for file_path in test_files:
         if os.path.exists(file_path) or file_path.startswith("http"):
             try:
-                ingest_document(file_path)
+                ingest_md_document(file_path)
                 print(f"✓ Successfully ingested: {file_path}")
             except Exception as e:
                 print(f"✗ Failed to ingest {file_path}: {str(e)}")

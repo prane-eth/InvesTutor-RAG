@@ -1,0 +1,10 @@
+Image credits for icons:
+- Documents: https://pixabay.com/vectors/documents-paper-text-icon-149799/
+- Web page: https://pixabay.com/vectors/document-html-web-internet-public-98478/
+- Page: https://pixabay.com/vectors/file-description-outline-document-6472230/
+- Robot: https://www.flaticon.com/free-icon/robot_18355220
+- Neural network: https://www.flaticon.com/free-icon/deep-learning_8637101
+- Database: https://www.flaticon.com/free-icon/database_8686102
+- User: https://www.flaticon.com/free-icon/user_9131478   
+- Markdown file: https://www.flaticon.com/free-icon/file_14422333
+- Response: https://www.flaticon.com/free-icon/fast-response_10748876

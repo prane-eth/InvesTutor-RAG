@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "investutor"
-version = "0.1.0"
+version = "0.1.1"
 description = "An AI-powered investment education platform with RAG capabilities"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -16,12 +16,14 @@ dependencies = [
     "langchain",
     "langchain-openai",
     "langchain-pinecone",
-    "langchain-cohere",
     "langchain-community",
     "langchain-text-splitters",
     "pypdf",
     "beautifulsoup4",
     "requests",
+    "markdownify",
+    "mammoth",
+    "semantic-chunkers",
     "sentence-transformers[cross-encoder]",
     "streamlit",
     "fastapi",
@@ -30,3 +32,6 @@ dependencies = [
     "pinecone",
     "newsapi-python",
 ]
+
+[tool.setuptools.packages.find]
+include = ["investutor"]

@@ -3,11 +3,12 @@ from typing import Any, Dict, List
 
 import cohere
 from dotenv import load_dotenv
-from langchain_cohere import CohereEmbeddings
+from langchain_core.embeddings import Embeddings
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 from langchain_pinecone import PineconeVectorStore
-from pinecone import Pinecone as PineconeClient
+import openai
+from pinecone import Pinecone
 
 load_dotenv()
 
@@ -19,18 +20,37 @@ embed_model_name = os.getenv("EMBED_MODEL_NAME", "")
 if not embed_model_name:
     raise Exception("EMBED_MODEL_NAME is not set in the environment variables")
 
+embed_api_key = os.getenv("EMBEDDING_API_KEY", "")
+if not embed_api_key:
+    raise Exception("EMBEDDING_API_KEY is not set in the environment variables")
+
+embed_base_url = os.getenv("EMBEDDING_BASE_URL", "")
+if not embed_base_url:
+    raise Exception("EMBEDDING_BASE_URL is not set in the environment variables")
+
 index_name = os.getenv("PINECONE_INDEX_NAME", "")
 if not index_name:
     raise Exception("PINECONE_INDEX_NAME is not set in the environment variables")
 
-embeddings = CohereEmbeddings(
-    client=cohere.ClientV2(), async_client=None, model=embed_model_name
-)
-co = cohere.ClientV2()
-pc = PineconeClient()
+embed_client = openai.OpenAI(api_key=embed_api_key, base_url = embed_base_url)
+
+cohere_client = cohere.ClientV2(api_key=embed_api_key,
+                                base_url=embed_base_url.replace("/v1", ""))
 
 
-# RAG setup using modern LangChain LCEL
+class CustomEmbeddings(Embeddings):
+    def embed_query(self, text: str) -> List[float]:
+        response = embed_client.embeddings.create(input=[text], model=embed_model_name)
+        return response.data[0].embedding
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        response = embed_client.embeddings.create(input=texts, model=embed_model_name)
+        return [data.embedding for data in response.data]
+
+
+embeddings = CustomEmbeddings()
+vdb_client = Pinecone()
+
 
 
 # Custom retriever with reranking
@@ -63,12 +83,23 @@ class RerankingRetriever(BaseRetriever):
         return docs
 
 
-# Initialize retriever
-if index_name in [idx.name for idx in pc.list_indexes()]:
-    vectorstore = PineconeVectorStore(pc.Index(index_name), embeddings)
-else:
-    raise Exception("Pinecone index not found or PINECONE_INDEX_NAME not set.")
+# Create index if it doesn't exist
+if index_name not in [idx.name for idx in vdb_client.list_indexes()]:
+    # Generate a sample embedding and find size
+    print("Generating sample embedding to determine dimension...")
+    sample_embedding = embeddings.embed_query("Sample text for dimension check")
+    dimension = len(sample_embedding)
 
+    print("Creating Pinecone index:", index_name, "with dimension:", dimension)
+    vdb_client.create_index(
+        name=index_name,
+        dimension=dimension,
+        metric="cosine",
+        vector_type="dense",
+        spec={"serverless": {"cloud": "aws", "region": "us-east-1"}},
+    )
+
+vectorstore = PineconeVectorStore(vdb_client.Index(index_name), embeddings)
 retriever = RerankingRetriever(vectorstore, k=5, rerank_top_k=3)
 
 
@@ -93,33 +124,34 @@ def rerank_results(
     if not results:
         return results
 
-    try:
-        # Call Cohere rerank API
-        response = co.rerank(
-            query=query,
-            documents=[result["content"] for result in results],
-            top_n=top_k,
-            model=RERANK_MODEL_NAME,
+    # Call Cohere rerank API
+    response = cohere_client.rerank(
+        query=query,
+        documents=[result["content"] for result in results],
+        top_n=top_k,
+        model=RERANK_MODEL_NAME,
+    )
+
+    # Reorder results based on rerank response
+    reranked = []
+    for rerank_result in response.results:
+        # print("original_result:")
+        # print(results[rerank_result.index])
+        # print("rerank_result:")
+        # print(rerank_result)
+        original_result = results[rerank_result.index]
+        original_result["rerank_score"] = rerank_result.relevance_score
+        original_result["combined_score"] = (
+            0.7 * original_result["score"] + 0.3 * rerank_result.relevance_score
         )
+        reranked.append(original_result)
 
-        # Reorder results based on rerank response
-        reranked = []
-        for rerank_result in response.results:
-            original_result = results[rerank_result.index]
-            original_result["rerank_score"] = rerank_result.relevance_score
-            original_result["combined_score"] = (
-                0.7 * original_result["score"] + 0.3 * rerank_result.relevance_score
-            )
-            reranked.append(original_result)
+    return reranked
 
-        return reranked
 
-    except Exception as e:
-        print(f"Cohere reranking failed: {e}, falling back to basic reranking")
-        # Fallback to basic reranking
-        reranked = sorted(
-            results,
-            key=lambda x: x["score"] * (1 + len(x["content"]) / 1000),
-            reverse=True,
-        )
-        return reranked[:top_k]
+if __name__ == "__main__":
+    # Test the retriever
+    query = "What Is an Investment?"
+    docs = retriever._get_relevant_documents(query)
+    for i, doc in enumerate(docs):
+        print(f"Document {i+1}: {doc.page_content} | Metadata: {doc.metadata}")

@@ -50,9 +50,9 @@ def score_texts(req: RerankRequest):
     for result in results:
         new_results.append(
             {
-                "corpus_id": result["corpus_id"],
+                "index": result["corpus_id"],
                 "relevance_score": float(result["score"]),
-                "document": {"text": result["text"]},
+                "text": result["text"],
             }
         )
     return {"results": new_results}
@@ -76,7 +76,7 @@ class EmbedRequest(BaseModel):
         validate_by_name = True
 
 
-@app.post("/openai/embeddings")
+@app.post("/v1/embeddings")
 def embed_texts(req: EmbedRequest):  # OpenAI-compatible endpoint
     # To embed texts using the sentence-transformer model.
     embeddings = embed_model.encode(req.inputs)
@@ -85,20 +85,6 @@ def embed_texts(req: EmbedRequest):  # OpenAI-compatible endpoint
             {"index": idx, "object": "embedding", "embedding": embedding.tolist()}
             for idx, embedding in enumerate(embeddings)
         ]
-    }
-
-
-# Cohere-compatible endpoint
-
-class EmbedRequestCohere(BaseModel):
-    inputs: List[str]
-
-@app.post("/v2/embeddings")
-def cohere_embed_texts(req: EmbedRequestCohere):
-    # To embed texts using the sentence-transformer model.
-    embeddings = embed_model.encode(req.inputs)
-    return {
-        "embeddings": [embedding.tolist() for embedding in embeddings]
     }
 
 
@@ -125,9 +111,9 @@ def root_test():
 
 
 if __name__ == "__main__":
-    base_url = os.getenv("CO_API_URL", "")
+    base_url = os.getenv("EMBEDDING_BASE_URL", "")
     if not base_url:
-        raise ValueError("CO_API_URL environment variable is not set.")
+        raise ValueError("EMBEDDING_BASE_URL environment variable is not set.")
 
     # get port from the base_url
     url_parts = base_url.split(":")

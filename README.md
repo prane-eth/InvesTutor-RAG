@@ -10,6 +10,11 @@
 
 An AI-powered investment education platform with RAG (Retrieval-Augmented Generation) capabilities. Ingests financial documents, provides personalized tutoring, and offers real-time market insights.
 
+## Workflow
+
+<img src="./assets/Workflow.gif" alt="Workflow diagram" height="300px"/>
+
+
 ## Features
 
 - 📄 **Document Ingestion**: Upload and process PDF documents and web pages

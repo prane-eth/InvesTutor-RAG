@@ -1,8 +1,13 @@
+# Command:
+# streamlit run investutor/chatbot_app.py
+
 import streamlit as st
-from utils.ingestion import ingest_document
-from utils.model_utils import rag_chain
-from utils.news_integration import (fetch_financial_news, get_market_sentiment,
-                                    summarize_news_article)
+# import tempfile
+
+# from investutor.utils.ingestion import ingest_md_document
+from investutor.utils.model_utils import rag_chain
+from investutor.utils.news_api_integration import fetch_financial_news, \
+    get_market_sentiment, summarize_news_article
 
 # Page configuration
 st.set_page_config(
@@ -235,45 +240,44 @@ with tab3:
             else:
                 st.warning("No news found. Check your NewsAPI key configuration.")
 
-with tab4:
-    st.header("⚙️ Settings & Configuration")
+# with tab4:
+#     st.header("⚙️ Settings & Configuration")
     
-    st.subheader("Document Ingestion")
-    uploaded_file = st.file_uploader("Upload PDF document", type=['pdf'])
-    url_input = st.text_input("Or enter URL to ingest:")
+#     st.subheader("Document Ingestion")
+#     uploaded_file = st.file_uploader("Upload PDF document", type=['pdf'])
+#     url_input = st.text_input("Or enter URL to ingest:")
     
-    if st.button("📥 Ingest Document"):
-        if uploaded_file:
-            # Save uploaded file temporarily
-            import tempfile
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-                tmp_file.write(uploaded_file.read())
-                temp_path = tmp_file.name
+#     if st.button("📥 Ingest Document"):
+#         if uploaded_file:
+#             # Save uploaded file temporarily
+#             with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+#                 tmp_file.write(uploaded_file.read())
+#                 temp_path = tmp_file.name
             
-            try:
-                ingest_document(temp_path)
-                st.success("Document ingested successfully!")
-            except Exception as e:
-                st.error(f"Failed to ingest document: {e}")
-            finally:
-                import os
-                os.unlink(temp_path)
+#             try:
+#                 ingest_md_document(temp_path)
+#                 st.success("Document ingested successfully!")
+#             except Exception as e:
+#                 st.error(f"Failed to ingest document: {e}")
+#             finally:
+#                 import os
+#                 os.unlink(temp_path)
                 
-        elif url_input:
-            try:
-                ingest_document(url_input)
-                st.success("URL content ingested successfully!")
-            except Exception as e:
-                st.error(f"Failed to ingest URL: {e}")
-        else:
-            st.warning("Please upload a file or enter a URL.")
+#         elif url_input:
+#             try:
+#                 ingest_md_document(url_input)
+#                 st.success("URL content ingested successfully!")
+#             except Exception as e:
+#                 st.error(f"Failed to ingest URL: {e}")
+#         else:
+#             st.warning("Please upload a file or enter a URL.")
     
-    st.subheader("System Status")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Documents in Knowledge Base", "3+")
-    with col2:
-        st.metric("RAG System Status", "✅ Active")
+#     st.subheader("System Status")
+#     col1, col2 = st.columns(2)
+#     with col1:
+#         st.metric("Documents in Knowledge Base", "3+")
+#     with col2:
+#         st.metric("RAG System Status", "✅ Active")
 
 # Footer
 st.markdown("---")
