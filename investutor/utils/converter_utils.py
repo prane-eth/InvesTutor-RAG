@@ -57,6 +57,24 @@ def convert_docx_to_md(docx_path: str | Path) -> str:
         raise RuntimeError(f"Failed to convert DOCX {docx_path} to HTML: {e}")
 
 
+def preprocess_md_text(md_text: str) -> str:
+    """Preprocess markdown text by removing extra whitespace and normalizing line breaks."""
+    # Remove excessive blank lines
+    lines = md_text.splitlines()
+    cleaned_lines = []
+    previous_line_blank = False
+    for line in lines:
+        stripped_line = line.rstrip()
+        if not stripped_line:
+            if not previous_line_blank:
+                cleaned_lines.append("")
+            previous_line_blank = True
+        else:
+            cleaned_lines.append(stripped_line)
+            previous_line_blank = False
+    return "\n".join(cleaned_lines).strip()
+
+
 def convert_to_md_file(file_path: str | Path, format: str) -> Path:
     """Convert a file to markdown (`.md`) based on its format and return the temp file path.
 
@@ -64,6 +82,11 @@ def convert_to_md_file(file_path: str | Path, format: str) -> Path:
     """
     format = format.lower().lstrip(".")
     if format == "md" or format == "markdown":
+        with open(file_path, encoding="utf-8") as f:
+            text = f.read()
+        text = preprocess_md_text(text)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(text)
         return Path(file_path)
 
     if format == "pdf":
@@ -75,7 +98,8 @@ def convert_to_md_file(file_path: str | Path, format: str) -> Path:
     else:
         raise ValueError(f"Unsupported format for conversion to markdown: {format}")
 
-    if not text.strip():
+    text = preprocess_md_text(text)
+    if not text:
         raise ValueError(f"No text extracted from {file_path} for conversion to markdown.")
 
     # Write to a temporary markdown file
@@ -104,6 +128,9 @@ def fetch_url(u: str, max_retries: int = 3, timeout: int = 15):
             resp.raise_for_status()
             return resp
         except requests.RequestException as e:
+            if "403" in str(e) or "404" in str(e):
+                logging.error("Request error for %s: %s", u, e)
+                return None
             logging.warning("Request error for %s on attempt %s: %s", u, attempt, e)
         # backoff
         time.sleep(2 ** (attempt - 1))

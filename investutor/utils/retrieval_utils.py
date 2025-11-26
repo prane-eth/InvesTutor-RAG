@@ -6,9 +6,12 @@ from dotenv import load_dotenv
 from langchain_core.embeddings import Embeddings
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
+from langchain_milvus import Milvus
 from langchain_pinecone import PineconeVectorStore
 import openai
 from pinecone import Pinecone
+from pymilvus.milvus_client.milvus_client import IndexParam, IndexParams
+from pymilvus import MilvusClient
 
 load_dotenv()
 
@@ -32,6 +35,10 @@ index_name = os.getenv("PINECONE_INDEX_NAME", "")
 if not index_name:
     raise Exception("PINECONE_INDEX_NAME is not set in the environment variables")
 
+milvus_url = os.getenv("MILVUS_URI", "")
+if milvus_url:
+    index_name = index_name.replace("-", "_")
+
 embed_client = openai.OpenAI(api_key=embed_api_key, base_url = embed_base_url)
 
 cohere_client = cohere.ClientV2(api_key=embed_api_key,
@@ -49,8 +56,17 @@ class CustomEmbeddings(Embeddings):
 
 
 embeddings = CustomEmbeddings()
-vdb_client = Pinecone()
+pc_client = Pinecone()
 
+milvus_client = None
+if milvus_url:
+    milvus_client = MilvusClient(uri=milvus_url, token="root:Milvus")
+
+    # existing_databases = milvus_client.list_databases()
+    # if index_name not in existing_databases:
+    #     print("Creating Milvus database:", index_name)
+    #     database = milvus_client.create_database(index_name)
+    # db.using_database(index_name)
 
 
 # Custom retriever with reranking
@@ -84,22 +100,62 @@ class RerankingRetriever(BaseRetriever):
 
 
 # Create index if it doesn't exist
-if index_name not in [idx.name for idx in vdb_client.list_indexes()]:
-    # Generate a sample embedding and find size
-    print("Generating sample embedding to determine dimension...")
-    sample_embedding = embeddings.embed_query("Sample text for dimension check")
-    dimension = len(sample_embedding)
+if milvus_client:
+    # Create collection
+    if index_name not in milvus_client.list_collections():  # type: ignore
+        print("Generating sample embedding to determine dimension...")
+        sample_embedding = embeddings.embed_query("Sample text for dimension check")
+        dimension = len(sample_embedding)
 
-    print("Creating Pinecone index:", index_name, "with dimension:", dimension)
-    vdb_client.create_index(
-        name=index_name,
-        dimension=dimension,
-        metric="cosine",
-        vector_type="dense",
-        spec={"serverless": {"cloud": "aws", "region": "us-east-1"}},
+        print("Creating Milvus collection:", index_name)
+        milvus_client.create_collection(
+            collection_name=index_name,
+            dimension=dimension,
+            metric_type="COSINE",
+        )
+
+    # # Create index
+    # if index_name not in milvus_client.list_indexes(collection_name=index_name):
+    #     milvus_client.create_index(
+    #         collection_name=index_name,
+    #         index_params=IndexParams([
+    #             IndexParam(
+    #                 field_name="embeddings",
+    #                 index_type="HNSW", # "FLAT",
+    #                 index_name=index_name,
+    #             )
+    #         ]),
+    #         # field_name="embeddings",
+    #     )
+
+    vectorstore = Milvus(
+        collection_name=index_name,
+        embedding_function=embeddings,
+        connection_args={"uri": milvus_url, "token": "root:Milvus", "db_name": index_name},
+        index_params={"metric_type": "COSINE"},
+        consistency_level="Strong",
+        drop_old=False,
+        auto_id=True,
     )
+else:
+    if index_name not in [idx.name for idx in pc_client.list_indexes()]:
+        # Generate a sample embedding and find size
+        print("Generating sample embedding to determine dimension...")
+        sample_embedding = embeddings.embed_query("Sample text for dimension check")
+        dimension = len(sample_embedding)
 
-vectorstore = PineconeVectorStore(vdb_client.Index(index_name), embeddings)
+        print("Creating Pinecone index:", index_name, "with dimension:", dimension)
+        pc_client.create_index(
+            name=index_name,
+            dimension=dimension,
+            metric="cosine",
+            vector_type="dense",
+            spec={"serverless": {"cloud": "aws", "region": "us-east-1"}},
+        )
+
+    vectorstore = PineconeVectorStore(pc_client.Index(index_name),
+                                      embeddings, index_name=index_name)
+
 retriever = RerankingRetriever(vectorstore, k=5, rerank_top_k=3)
 
 

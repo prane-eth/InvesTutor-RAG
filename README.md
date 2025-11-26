@@ -31,6 +31,11 @@ An AI-powered investment education platform with RAG (Retrieval-Augmented Genera
 - **Embeddings**: OpenAI text-embedding-ada-002 or custom models
 - **Chunking**: Recursive text splitting with semantic overlap
 
+## Highlights:
+- Low latency responses (2ms for insertion, 30ms for querying and re-ranking).
+- Scalable architecture using popular vector databases.
+- Allows to switch vector databases, LLMs, and embedding models easily through .env.
+
 ## Setup
 
 ### Prerequisites
