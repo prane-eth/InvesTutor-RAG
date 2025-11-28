@@ -10,48 +10,42 @@ from langchain_milvus import Milvus
 from langchain_pinecone import PineconeVectorStore
 import openai
 from pinecone import Pinecone
-from pymilvus.milvus_client.milvus_client import IndexParam, IndexParams
 from pymilvus import MilvusClient
 
 load_dotenv()
 
+EMBED_MODEL_NAME = os.getenv("EMBED_MODEL_NAME", "")
+EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY", "")
+EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "")
+
 RERANK_MODEL_NAME = os.getenv("RERANK_MODEL_NAME", "")
-if not RERANK_MODEL_NAME:
-    raise Exception("RERANK_MODEL_NAME is not set in the environment variables")
-
-embed_model_name = os.getenv("EMBED_MODEL_NAME", "")
-if not embed_model_name:
-    raise Exception("EMBED_MODEL_NAME is not set in the environment variables")
-
-embed_api_key = os.getenv("EMBEDDING_API_KEY", "")
-if not embed_api_key:
-    raise Exception("EMBEDDING_API_KEY is not set in the environment variables")
-
-embed_base_url = os.getenv("EMBEDDING_BASE_URL", "")
-if not embed_base_url:
-    raise Exception("EMBEDDING_BASE_URL is not set in the environment variables")
+RERANK_API_KEY = os.getenv("RERANK_API_KEY", "")
+RERANK_BASE_URL = os.getenv("RERANK_BASE_URL", "")
 
 index_name = os.getenv("PINECONE_INDEX_NAME", "")
-if not index_name:
-    raise Exception("PINECONE_INDEX_NAME is not set in the environment variables")
+
+for val in [RERANK_MODEL_NAME, EMBED_MODEL_NAME, EMBEDDING_API_KEY, EMBEDDING_BASE_URL,
+            RERANK_API_KEY, RERANK_BASE_URL, index_name]:
+    if not val:
+        raise Exception("One or more required environment variables are not set.")
+
 
 milvus_url = os.getenv("MILVUS_URI", "")
 if milvus_url:
-    index_name = index_name.replace("-", "_")
+    index_name = index_name.replace("-", "_")  # compatible with Milvus naming
 
-embed_client = openai.OpenAI(api_key=embed_api_key, base_url = embed_base_url)
+embed_client = openai.OpenAI(api_key=EMBEDDING_API_KEY, base_url=EMBEDDING_BASE_URL)
 
-cohere_client = cohere.ClientV2(api_key=embed_api_key,
-                                base_url=embed_base_url.replace("/v1", ""))
+cohere_client = cohere.ClientV2(api_key=RERANK_API_KEY, base_url=RERANK_BASE_URL)
 
 
 class CustomEmbeddings(Embeddings):
     def embed_query(self, text: str) -> List[float]:
-        response = embed_client.embeddings.create(input=[text], model=embed_model_name)
+        response = embed_client.embeddings.create(input=[text], model=EMBED_MODEL_NAME)
         return response.data[0].embedding
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        response = embed_client.embeddings.create(input=texts, model=embed_model_name)
+        response = embed_client.embeddings.create(input=texts, model=EMBED_MODEL_NAME)
         return [data.embedding for data in response.data]
 
 
@@ -61,12 +55,6 @@ pc_client = Pinecone()
 milvus_client = None
 if milvus_url:
     milvus_client = MilvusClient(uri=milvus_url, token="root:Milvus")
-
-    # existing_databases = milvus_client.list_databases()
-    # if index_name not in existing_databases:
-    #     print("Creating Milvus database:", index_name)
-    #     database = milvus_client.create_database(index_name)
-    # db.using_database(index_name)
 
 
 # Custom retriever with reranking
@@ -191,10 +179,6 @@ def rerank_results(
     # Reorder results based on rerank response
     reranked = []
     for rerank_result in response.results:
-        # print("original_result:")
-        # print(results[rerank_result.index])
-        # print("rerank_result:")
-        # print(rerank_result)
         original_result = results[rerank_result.index]
         original_result["rerank_score"] = rerank_result.relevance_score
         original_result["combined_score"] = (

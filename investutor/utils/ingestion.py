@@ -12,9 +12,9 @@ import time
 from investutor.utils.converter_utils import convert_to_md_file, fetch_url
 from investutor.utils.retrieval_utils import (
     vectorstore,
-    embed_api_key,
-    embed_base_url,
-    embed_model_name,
+    EMBEDDING_API_KEY,
+    EMBEDDING_BASE_URL,
+    EMBED_MODEL_NAME,
 )
 
 
@@ -29,9 +29,9 @@ from investutor.utils.retrieval_utils import (
 class SemanticChunker:
     def __init__(self) -> None:
         self.encoder = OpenAIEncoder(
-            name=None, openai_api_key=embed_api_key, openai_base_url=embed_base_url
+            name=None, openai_api_key=EMBEDDING_API_KEY, openai_base_url=EMBEDDING_BASE_URL
         )
-        self.encoder.name = embed_model_name
+        self.encoder.name = EMBED_MODEL_NAME
         self.chunker = ConsecutiveChunker(encoder=self.encoder)
 
     def split_text(self, text: str) -> list[str]:

@@ -8,3 +8,4 @@ mlruns.db
 mlruns/
 *.egg-info
 volumes/
+*.drawio.bkp

@@ -8,7 +8,7 @@
 import os
 import time
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 
 import psutil
 import pytz
@@ -17,10 +17,14 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from sentence_transformers import CrossEncoder, SentenceTransformer
+from functools import lru_cache
+
 
 load_dotenv()
 
 app = FastAPI()
+
+device = "cuda"  # cpu/cuda
 
 
 print("Loading models...")
@@ -33,7 +37,8 @@ RERANK_MODEL_NAME = os.getenv("RERANK_MODEL_NAME", "")
 if not RERANK_MODEL_NAME:
     raise Exception("RERANK_MODEL_NAME is not set in the environment variables")
 
-ranker = CrossEncoder(RERANK_MODEL_NAME)
+ranker = CrossEncoder(RERANK_MODEL_NAME, device=device)
+ranker.predict([("hello", "world")])
 
 
 class RerankRequest(BaseModel):
@@ -42,10 +47,15 @@ class RerankRequest(BaseModel):
     top_n: int
 
 
+@lru_cache(maxsize=50000)
+def rerank_results_cached(query: str, documents: Tuple[str], top_k: int):
+    return ranker.rank(query, list(documents), top_k, return_documents=True)
+
+
 @app.post("/v2/rerank")  # Cohere-compatible endpoint
-def score_texts(req: RerankRequest):
+def rerank_results(req: RerankRequest):
     # To get a list of relevant documents based on a query.
-    results = ranker.rank(req.query, req.documents, req.top_n, return_documents=True)
+    results = rerank_results_cached(req.query, tuple(req.documents), req.top_n)
     new_results = []
     for result in results:
         new_results.append(
@@ -65,7 +75,8 @@ EMBED_MODEL_NAME = os.getenv("EMBED_MODEL_NAME", "")
 if not EMBED_MODEL_NAME:
     raise Exception("EMBED_MODEL_NAME is not set in the environment variables")
 
-embed_model = SentenceTransformer(EMBED_MODEL_NAME)
+embed_model = SentenceTransformer(EMBED_MODEL_NAME, device=device)
+embed_model.encode(["hello world"])
 
 
 class EmbedRequest(BaseModel):
@@ -76,10 +87,17 @@ class EmbedRequest(BaseModel):
         validate_by_name = True
 
 
+@lru_cache(maxsize=50000)
+def embed_texts_cached(texts: Tuple[str]):
+    return embed_model.encode(
+        list(texts), batch_size=64, convert_to_numpy=True, normalize_embeddings=False
+    )
+
+
 @app.post("/v1/embeddings")
 def embed_texts(req: EmbedRequest):  # OpenAI-compatible endpoint
     # To embed texts using the sentence-transformer model.
-    embeddings = embed_model.encode(req.inputs)
+    embeddings = embed_texts_cached(tuple(req.inputs))
     return {
         "data": [
             {"index": idx, "object": "embedding", "embedding": embedding.tolist()}
@@ -111,19 +129,20 @@ def root_test():
 
 
 if __name__ == "__main__":
-    base_url = os.getenv("EMBEDDING_BASE_URL", "")
+    base_url = os.getenv("RERANK_BASE_URL", "")
     if not base_url:
-        raise ValueError("EMBEDDING_BASE_URL environment variable is not set.")
+        raise ValueError("RERANK_BASE_URL environment variable is not set.")
 
     # get port from the base_url
     url_parts = base_url.split(":")
-    port = int(url_parts[-1].split("/")[0]) if len(url_parts) > 2 else 80
+    port = int(url_parts[-1].split("/")[0]) if len(url_parts) > 2 else 8000
 
     while True:
         try:
             # Start the FastAPI server
             print("Starting the FastAPI server...")
             uvicorn.run(app, host="0.0.0.0", port=port)
+            # $ uvicorn investutor.scripts.host_models:app --host 0.0.0.0 --port 8000 --workers 2
             break
         except KeyboardInterrupt:
             print("Server stopped by user.")

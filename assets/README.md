@@ -6,5 +6,6 @@ Image credits for icons:
 - Neural network: https://www.flaticon.com/free-icon/deep-learning_8637101
 - Database: https://www.flaticon.com/free-icon/database_8686102
 - User: https://www.flaticon.com/free-icon/user_9131478   
+- Ranking: https://www.flaticon.com/free-icon/ranking_490576
 - Markdown file: https://www.flaticon.com/free-icon/file_14422333
 - Response: https://www.flaticon.com/free-icon/fast-response_10748876
