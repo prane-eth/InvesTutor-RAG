@@ -43,12 +43,12 @@ sample_queries = [
 
 def check_search_rerank_latency():
     search_count = 0
-    start = time.process_time()
+    start = time.time()
     for _ in range(2):
         for query in sample_queries:
             _ = search_documents(query)
             search_count += 1
-    end = time.process_time()
+    end = time.time()
     avg_latency = (end - start) / search_count
 
     print(f"Average latency per search+re-rank: {format_time(avg_latency)}")
@@ -58,18 +58,18 @@ def check_embedding_latency():
     # Measure latency for single-query embeddings and batch document embeddings
 
     # Measure embed_query latency (multiple runs)
-    start = time.process_time()
+    start = time.time()
     for q in sample_queries:
         _ = embeddings.embed_query(q)
-    total_q_time = time.process_time() - start
+    total_q_time = time.time() - start
     avg_query_time_per_item = total_q_time / len(sample_queries)
     print(f"embed_query: avg time per query: {format_time(avg_query_time_per_item)}")
 
     # Measure embed_documents latency for a batch
     batch_texts = [f"Document sample {i} about investing." for i in range(20)]
-    start = time.process_time()
+    start = time.time()
     _ = embeddings.embed_documents(batch_texts)
-    batch_time = time.process_time() - start
+    batch_time = time.time() - start
     avg_batch_time_per_doc = batch_time / len(batch_texts)
     print(f"embed_documents: avg time per document: {format_time(avg_batch_time_per_doc)}")
 
@@ -86,10 +86,10 @@ def check_reranking_latency():
         results = search_documents(q, k=10)  # These results are re-ranked, but do again.
         sample_query_results.append(results)
 
-    start = time.process_time()
+    start = time.time()
     for query, results in zip(sample_queries, sample_query_results):
         _ = rerank_results(query, results, top_k=3)
-    total_rerank_time = time.process_time() - start
+    total_rerank_time = time.time() - start
     total_rerank_calls = len(sample_queries)
 
     print(f"Rerank: avg time per call: {format_time(total_rerank_time/total_rerank_calls)}")
@@ -122,9 +122,9 @@ def check_chunking_latency():
     total_time = 0.0
     total_chunks = 0
     for _ in range(runs):
-        start = time.process_time()
+        start = time.time()
         chunks = text_splitter.split_text(large_text)
-        elapsed = time.process_time() - start
+        elapsed = time.time() - start
         total_time += elapsed
         total_chunks += len(chunks)
 
@@ -138,12 +138,12 @@ def check_chunking_latency():
 
     # Many small documents test
     small_docs = [paragraph * 3 for _ in range(200)]
-    start = time.process_time()
+    start = time.time()
     all_chunks = []
     for doc in small_docs:
         c = text_splitter.split_text(doc)
         all_chunks.extend(c)
-    elapsed = time.process_time() - start
+    elapsed = time.time() - start
     avg_per_doc = elapsed / len(small_docs) if small_docs else float('inf')
     avg_per_chunk = elapsed / len(all_chunks) if all_chunks else float('inf')
 

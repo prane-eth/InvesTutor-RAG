@@ -5,7 +5,7 @@ import streamlit as st
 # import tempfile
 
 # from investutor.utils.ingestion import ingest_md_document
-from investutor.utils.model_utils import rag_chain
+from investutor.utils.llm_utils import rag_chain
 from investutor.utils.news_api_integration import fetch_financial_news, \
     get_market_sentiment, summarize_news_article
 

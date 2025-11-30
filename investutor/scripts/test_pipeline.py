@@ -6,7 +6,7 @@ Test script for the AI Investment Tutor RAG system
 import os
 
 from investutor.utils.ingestion import ingest_md_document
-from investutor.utils.model_utils import rag_chain
+from investutor.utils.llm_utils import rag_chain
 from investutor.utils.news_api_integration import fetch_financial_news
 from investutor.utils.retrieval_utils import rerank_results, search_documents
 

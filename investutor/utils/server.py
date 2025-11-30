@@ -5,7 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from investutor.utils.model_utils import rag_chain
+from investutor.utils.llm_utils import rag_chain
 
 app = FastAPI(title="OpenAI-Compatible API to host the RAG system")
 

@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 from newsapi import NewsApiClient
 
-from investutor.utils.model_utils import llm
+from investutor.utils.llm_utils import llm
 
 # News API integration for financial news
 NEWS_API_KEY = os.getenv("NEWS_API_KEY", "")
@@ -175,7 +175,7 @@ def ingest_news_to_vectorstore(
     query: str = "investments OR stocks OR bonds OR markets", days_back: int = 1
 ):
     """Fetch news and ingest summaries into vectorstore."""
-    from ingestion import ingest_md_document
+    from investutor.utils.ingestion import ingest_md_document
 
     news = fetch_financial_news(query, days_back)
 
